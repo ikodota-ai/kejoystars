@@ -1,0 +1,27 @@
+.idea
+*.iws
+*.iml
+*.ipr
+target/
+application-dev.yml
+application-pro.yml
+application-dem.yml
+application-prod.yml
+application-test.yml
+/public/uploads/*
+!/public/uploads/index.html
+# macOS
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Node
+node_modules/
+
+# Build artifacts
+admin/dist.zip
+admin/a.html
+admin/aa.html
+admin/aaa.html

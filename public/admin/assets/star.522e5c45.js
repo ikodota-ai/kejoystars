@@ -1,0 +1,1 @@
+import{r}from"./index.21b1cb0f.js";function a(t){return r.get({url:"/k.star/list",params:t})}function e(t){return r.post({url:"/k.star/add",params:t})}function u(t){return r.post({url:"/k.star/edit",params:t})}function n(t){return r.get({url:"/k.star/detail",params:t})}function i(t){return r.post({url:"/k.star/del",params:t})}export{a,u as b,e as c,i as d,n as s};

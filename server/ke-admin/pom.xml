@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <!-- 父工程 -->
+    <parent>
+        <artifactId>kestaradmin-java</artifactId>
+        <groupId>org.mdd</groupId>
+        <version>1.0.1</version>
+    </parent>
+
+    <!-- 模块信息 -->
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>ke-admin</artifactId>
+    <packaging>jar</packaging>
+
+    <repositories>
+        <repository>
+            <id>aliyun-releases</id>
+            <url>https://maven.aliyun.com/repository/public</url>
+        </repository>
+        <repository>
+            <id>central</id>
+            <url>https://repo1.maven.org/maven2</url>
+        </repository>
+    </repositories>
+    <!-- 项目管理 -->
+    <dependencies>
+        <!-- 全局工具 -->
+        <dependency>
+            <groupId>org.mdd</groupId>
+            <artifactId>ke-common</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+
+        <!-- 代码生成 -->
+        <dependency>
+            <groupId>org.mdd</groupId>
+            <artifactId>ke-generator</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+        <!-- 验证码 -->
+        <dependency>
+            <groupId>com.github.penggle</groupId>
+            <artifactId>kaptcha</artifactId>
+        </dependency>
+
+        <!-- SaToken -->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- SaToken-Redis -->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-dao-redis-jackson</artifactId>
+        </dependency>
+
+        <!-- Quartz-Scheduler -->
+        <dependency>
+            <groupId>org.quartz-scheduler</groupId>
+            <artifactId>quartz</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>5.3.23</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.htmlunit</groupId>
+            <artifactId>htmlunit</artifactId>
+            <version>4.7.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.jpush</groupId>
+            <artifactId>jiguang-sdk</artifactId>
+            <version>5.3.0</version> <!-- 自定义版本号 -->
+            <scope>system</scope> <!-- 关键：指定范围为 system -->
+            <systemPath>${project.basedir}/src/main/resources/lib/jiguang-sdk-5.3.0.jar</systemPath> <!-- 关键：指定物理路径 -->
+        </dependency>
+    </dependencies>
+
+    <!-- 插件管理 -->
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.6.4</version>
+                <configuration>
+                    <!-- 必须添加此配置，否则 system scope 的 jar 不会被打包进去 -->
+                    <includeSystemScope>true</includeSystemScope>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
