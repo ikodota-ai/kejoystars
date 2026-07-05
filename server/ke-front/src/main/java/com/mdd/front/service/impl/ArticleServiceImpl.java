@@ -138,20 +138,23 @@ public class ArticleServiceImpl implements IArticleService {
 //            }
         }
 
-        if (StringUtils.isNotNull(searchValidate.getSort())) {
-            switch (searchValidate.getSort()) {
-                case "hot": // 最热
-                    //queryWrapper.orderByDesc(Arrays.asList("click_actual + click_virtual", "id"));
-                    queryWrapper.orderByDesc("click_actual + click_virtual").orderByDesc("id");
-                    break;
-                case "new": // 最新
-                    queryWrapper.orderByDesc("id");
-                    break;
-                case "asc":
-                    queryWrapper.orderByAsc("create_time").orderByAsc("id");
-                default:    // 默认
-                    queryWrapper.orderByDesc("create_time").orderByDesc("id");
-            }
+        // sort 未传或未识别时，默认按 create_time DESC
+        String sort = StringUtils.isNotNull(searchValidate.getSort()) ? searchValidate.getSort() : "";
+        switch (sort) {
+            case "hot": // 最热
+                queryWrapper.orderByDesc("click_actual + click_virtual").orderByDesc("id");
+                break;
+            case "new": // 最新
+                queryWrapper.orderByDesc("id");
+                break;
+            case "asc":
+                queryWrapper.orderByAsc("create_time").orderByAsc("id");
+                break;
+            case "desc":
+            case "default":
+            default:    // 默认：创建时间倒序
+                queryWrapper.orderByDesc("create_time").orderByDesc("id");
+                break;
         }
         System.out.println(queryWrapper.getSqlSegment());
         IPage<Article> iPage = articleMapper.selectPage(new Page<>(pageNo, pageSize), queryWrapper);
