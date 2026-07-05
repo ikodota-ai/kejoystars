@@ -3,7 +3,6 @@ package com.mdd.common.plugin.storage.engine;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
-import com.aliyun.oss.model.DeleteObjectsRequest;
 import com.aliyun.oss.model.PutObjectRequest;
 import com.mdd.common.exception.OperateException;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,6 +21,11 @@ public class AliyunStorage {
     private final Map<String, String> config;
 
     /**
+     * OSS 客户端（懒加载，实例级缓存）
+     */
+    private OSS client;
+
+    /**
      * 构造方法
      */
     public AliyunStorage(Map<String, String> config) {
@@ -32,13 +36,27 @@ public class AliyunStorage {
      * 鉴权令牌
      *
      * @author fzr
-     * @return String
+     * @return OSS
      */
     public OSS ossClient() {
-        String endpoint        = this.config.get("endpoint");
-        String accessKeyId     = this.config.get("access_key");
-        String accessKeySecret = this.config.get("secret_key");
-       return new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        if (this.client == null) {
+            String endpoint        = this.config.get("endpoint");
+            String accessKeyId     = this.config.get("access_key");
+            String accessKeySecret = this.config.get("secret_key");
+            this.client = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        }
+        return this.client;
+    }
+
+    private void shutdownQuietly() {
+        if (this.client != null) {
+            try {
+                this.client.shutdown();
+            } catch (Exception ignored) {
+            } finally {
+                this.client = null;
+            }
+        }
     }
 
     /**
@@ -59,14 +77,16 @@ public class AliyunStorage {
         } catch (Exception ce) {
             throw new OperateException(ce.getMessage());
         } finally {
-            if (this.ossClient() != null) {
-                this.ossClient().shutdown();
-            }
+            shutdownQuietly();
         }
     }
 
     public void delete(String key) {
-        this.ossClient().deleteObject(this.config.get("bucket"), key);
+        try {
+            this.ossClient().deleteObject(this.config.get("bucket"), key);
+        } finally {
+            shutdownQuietly();
+        }
     }
 
 }

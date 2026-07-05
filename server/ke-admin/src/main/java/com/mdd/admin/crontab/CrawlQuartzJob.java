@@ -16,16 +16,19 @@ import com.mdd.common.entity.k.StarInfo;
 import com.mdd.common.entity.k.StarInstagram;
 import com.mdd.common.entity.k.UserHistory;
 import com.mdd.common.entity.user.User;
+import com.mdd.common.enums.AlbumEnum;
 import com.mdd.common.exception.OperateException;
 import com.mdd.common.mapper.k.CoupleMapper;
 import com.mdd.common.mapper.k.StarInfoMapper;
 import com.mdd.common.mapper.k.StarInstagramMapper;
 import com.mdd.common.mapper.k.UserHistoryMapper;
 import com.mdd.common.mapper.user.UserMapper;
+import com.mdd.common.plugin.storage.BytesMultipartFile;
+import com.mdd.common.plugin.storage.StorageDriver;
+import com.mdd.common.plugin.storage.UploadFilesVo;
 import com.mdd.common.util.ImageDownloaderUtil;
 import com.mdd.common.util.RedisUtils;
 import com.mdd.common.util.TimeUtils;
-import com.mdd.common.util.YmlUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.client.utils.DateUtils;
@@ -36,11 +39,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
-import java.io.File;
 import java.util.*;
 import javax.annotation.Resource;
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 
 /**
  * 这是一个定时器，每天晚上12点执行，查找明星有instagram的，
@@ -108,36 +108,41 @@ public class CrawlQuartzJob {
                 //生成本地文件名,path + md5(jsonObject.getString("url")) + ".jpg"检查图片是否存在,
                 //将远程图片保存到本地
                 String url = text.get("url");
-                String directory = YmlUtils.get("like.upload-directory");
-
-                if (directory == null || directory.equals("")) {
-                    throw new OperateException("请配置上传目录like.upload-directory");
-                }
                 String regex = "^http(s?)://[^/]+/([^?]+).*?$";
-                String s = url.replaceAll(regex, "$2");
-                if (!url.matches(regex) || s.isEmpty()) continue;
+                String pathPart = url.replaceAll(regex, "$2");
+                if (!url.matches(regex) || pathPart.isEmpty()) continue;
 
-                String md5 = DigestUtils.md5Hex(s);
+                String md5 = DigestUtils.md5Hex(pathPart);
                 int count = Math.toIntExact(starInstagramMapper.selectCount(new QueryWrapper<StarInstagram>().eq("check_code", md5)));
                 if (count == 0) {
-                    String fileName = "image/" + text.get("id") + "/" + md5 ;
-                    File file = new File(directory + fileName);
-                    //检查目录是否存在，不存在则创建
-                    if (!file.getParentFile().exists()) file.getParentFile().mkdirs();
-                    // 下载并保存图片的逻辑
+                    ImageDownloaderUtil.FetchedImage fetched;
                     try {
-//                            ImageDownloaderUtil.downloadImage(url, new HashMap<>(), directory + fileName);
-                        String name = ImageDownloaderUtil.processRemoteImageWithFallback(url, directory + fileName);
-                        if (name != null) {
-                            fileName = name.replace(directory, "");
-                        } else {
-                            throw new OperateException("图片下载失败");
-                        }
-                        System.out.println("图片下载成功: " + fileName);
+                        fetched = ImageDownloaderUtil.downloadImageAsBytes(url, new HashMap<>());
                     } catch (Exception e) {
                         System.err.println("下载图片失败: " + e.getMessage());
                         continue;
                     }
+                    if (fetched == null) {
+                        System.err.println("图片过小或无效: " + url);
+                        continue;
+                    }
+
+                    // 通过 StorageDriver 分发到当前生效的存储引擎
+                    String ext = fetched.getExtension();
+                    BytesMultipartFile file = new BytesMultipartFile(
+                            "file", md5 + "." + ext,
+                            "image/" + ("jpg".equals(ext) ? "jpeg" : ext),
+                            fetched.getBytes());
+                    UploadFilesVo vo;
+                    try {
+                        vo = new StorageDriver().upload(file, "image/" + text.get("id"), AlbumEnum.IMAGE.getCode());
+                    } catch (OperateException e) {
+                        System.err.println("上传图片失败: " + e.getMessage());
+                        continue;
+                    }
+                    String fileName = vo.getUrl();
+                    System.out.println("图片下载成功: " + fileName);
+
                     //保存到starInstagram中
                     String batch = "";
                     if (text.containsKey("batch")) batch = text.get("batch");

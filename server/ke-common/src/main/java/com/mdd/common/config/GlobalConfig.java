@@ -34,7 +34,7 @@ public class GlobalConfig {
     public static Integer uploadVideoSize = 1024 * 1024 * 30;
 
     // 上传图片扩展
-    public static String[] uploadImageExt = new String[] {"png", "jpg", "jpeg", "gif", "ico", "bmp"};
+    public static String[] uploadImageExt = new String[] {"png", "jpg", "jpeg", "gif", "ico", "bmp", "webp"};
 
     // 上传视频扩展
     public static String[] uploadVideoExt = new String[] {"mp4", "mp3", "avi", "flv", "rmvb", "mov"};

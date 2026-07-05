@@ -4,6 +4,8 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -14,6 +16,33 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class ImageDownloaderUtil {
+
+    /**
+     * 单张图片最小字节数，低于该值视为无效图并丢弃
+     */
+    public static final int MIN_IMAGE_BYTES = 50 * 1024;
+
+    /**
+     * 抓取图片下载结果
+     */
+    public static class FetchedImage {
+        private final byte[] bytes;
+        private final String extension;
+
+        public FetchedImage(byte[] bytes, String extension) {
+            this.bytes = bytes;
+            this.extension = extension;
+        }
+
+        public byte[] getBytes() {
+            return bytes;
+        }
+
+        public String getExtension() {
+            return extension;
+        }
+    }
+
     public static void downloadImage(String imageUrl, Map<String, String> headers, String savePath) throws Exception {
         URL url = new URL(imageUrl);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -32,6 +61,83 @@ public class ImageDownloaderUtil {
             }
         }
         conn.disconnect();
+    }
+
+    /**
+     * 下载远程图片到内存，返回 byte[] 与探测出的扩展名
+     * - 小于 {@link #MIN_IMAGE_BYTES} 的图片会被视为无效
+     * - 扩展名探测顺序：ImageReader > Content-Type > URL
+     */
+    public static FetchedImage downloadImageAsBytes(String imageUrl, Map<String, String> headers) throws IOException {
+        URL url = new URL(imageUrl);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        if (headers != null) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                conn.setRequestProperty(entry.getKey(), entry.getValue());
+            }
+        }
+        conn.setRequestMethod("GET");
+        conn.setConnectTimeout(10000);
+        conn.setReadTimeout(20000);
+        conn.setRequestProperty("Accept-Encoding", "identity");
+        conn.connect();
+
+        try {
+            if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                throw new IOException("HTTP status " + conn.getResponseCode() + " for " + imageUrl);
+            }
+
+            byte[] bytes;
+            try (InputStream in = conn.getInputStream(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[4096];
+                int len;
+                while ((len = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, len);
+                }
+                bytes = out.toByteArray();
+            }
+            if (bytes.length < MIN_IMAGE_BYTES) {
+                return null;
+            }
+
+            String ext = detectExtension(bytes, conn.getContentType(), imageUrl);
+            return new FetchedImage(bytes, ext);
+        } finally {
+            conn.disconnect();
+        }
+    }
+
+    /**
+     * 通过 ImageReader / Content-Type / URL 后缀 探测图片扩展名
+     */
+    public static String detectExtension(byte[] bytes, String contentType, String imageUrl) {
+        try (ImageInputStream iis = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
+            if (iis != null) {
+                Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
+                if (readers.hasNext()) {
+                    ImageReader reader = readers.next();
+                    try {
+                        return getFileExtension(reader.getFormatName());
+                    } finally {
+                        reader.dispose();
+                    }
+                }
+            }
+        } catch (IOException ignored) {
+        }
+        if (contentType != null && contentType.startsWith("image/")) {
+            String sub = contentType.substring(6).split(";")[0].trim().toLowerCase();
+            if (!sub.isEmpty()) return getFileExtension(sub);
+        }
+        if (imageUrl != null) {
+            int q = imageUrl.indexOf('?');
+            String clean = q > 0 ? imageUrl.substring(0, q) : imageUrl;
+            int dot = clean.lastIndexOf('.');
+            if (dot > 0 && dot < clean.length() - 1) {
+                return getFileExtension(clean.substring(dot + 1).toLowerCase());
+            }
+        }
+        return "jpg";
     }
 
     /**
@@ -200,7 +306,8 @@ public class ImageDownloaderUtil {
     /**
      * 获取文件扩展名
      */
-    private static String getFileExtension(String formatName) {
+    public static String getFileExtension(String formatName) {
+        if (formatName == null) return "jpg";
         switch (formatName.toLowerCase()) {
             case "jpeg":
                 return "jpg";

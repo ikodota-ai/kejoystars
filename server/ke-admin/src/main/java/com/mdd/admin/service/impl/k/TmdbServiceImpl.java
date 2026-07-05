@@ -2,7 +2,6 @@ package com.mdd.admin.service.impl.k;
 
 import com.alibaba.fastjson2.JSONObject;
 
-import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -17,11 +16,14 @@ import com.mdd.admin.service.k.ITmdbService;
 import com.mdd.admin.validate.k.StarInfoCreateValidate;
 import com.mdd.admin.vo.k.StarInfoDetailVo;
 import com.mdd.common.entity.k.MoviesInfo;
+import com.mdd.common.enums.AlbumEnum;
 import com.mdd.common.exception.OperateException;
 import com.mdd.common.mapper.k.MoviesInfoMapper;
+import com.mdd.common.plugin.storage.BytesMultipartFile;
+import com.mdd.common.plugin.storage.StorageDriver;
+import com.mdd.common.plugin.storage.UploadFilesVo;
 import com.mdd.common.util.ImageDownloaderUtil;
 import com.mdd.common.util.UrlUtils;
-import com.mdd.common.util.YmlUtils;
 import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
@@ -373,47 +375,39 @@ public class TmdbServiceImpl implements ITmdbService {
     }
 
     public String grabImage(String imageUrl, String dir) throws IOException {
-        if (imageUrl.isEmpty()) return null;
-        // 映射目录
-        String directory = YmlUtils.get("like.upload-directory");
-        if (directory == null || directory.equals("")) {
-            throw new OperateException("请配置上传目录like.upload-directory");
-        }
+        if (imageUrl == null || imageUrl.isEmpty()) return null;
 
-        // 文件信息
-        String savePath = (directory +  dir);
+        // 抓取头，尽量模拟浏览器以避免被 CDN 拦截
+        Map<String, String> headers = new HashMap<String, String>() {{
+            put("Accept", "image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5");
+            put("Accept-Language", "en-US,en;q=0.5");
+            put("Connection", "keep-alive");
+            put("Referer", "https://www.themoviedb.org/");
+            put("Sec-Fetch-Dest", "image");
+            put("Sec-Fetch-Mode", "no-cors");
+            put("Sec-Fetch-Site", "same-site");
+            put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0");
+        }};
 
-        // 创建目录
-        File fileExist = new File(savePath);
-        if (!fileExist.exists()) {
-            if (!fileExist.mkdirs()) {
-                throw new OperateException("创建上传目录失败");
-            }
-        }
-        String imageFilename = imageUrl.replaceAll("^.*?([^/]{0,})$", "$1");
+        ImageDownloaderUtil.FetchedImage fetched;
         try {
-            ImageDownloaderUtil.downloadImage(imageUrl, new HashMap<String, String>() {{
-                put("Accept", "image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5");
-                put("Accept-Encoding", "gzip, deflate, br, zstd");
-                put("Accept-Language", "en-US,en;q=0.5");
-                put("Connection", "keep-alive");
-                put("Cookie", "_ga_4257LNMWD9=GS2.1.s1757375481$o12$g1$t1757375522$j19$l0$h0; _ga=GA1.1.1590383222.1757146055");
-                put("Host", "media.themoviedb.org");
-                put("Priority", "u=5, i");
-                put("Referer", "https://www.themoviedb.org/");
-                put("Sec-Fetch-Dest", "image");
-                put("Sec-Fetch-Mode", "no-cors");
-                put("Sec-Fetch-Site", "same-site");
-                put("TE", "trailers");
-                put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0");
-            }}, savePath + imageFilename);
-        } catch (Exception e) {
-            e.printStackTrace();
-            log.error("图片下载失败" + imageUrl);
+            fetched = ImageDownloaderUtil.downloadImageAsBytes(imageUrl, headers);
+        } catch (IOException e) {
+            log.error("图片下载失败{}", imageUrl, e);
             throw new OperateException("图片下载失败" + imageUrl);
         }
+        if (fetched == null) {
+            throw new OperateException("图片过小或无效" + imageUrl);
+        }
 
-        return dir + imageFilename;
+        // 通过 StorageDriver 分发到当前生效的存储引擎（本地/阿里云/七牛/腾讯云）
+        String ext = fetched.getExtension();
+        String folder = dir.endsWith("/") ? dir.substring(0, dir.length() - 1) : dir;
+        BytesMultipartFile file = new BytesMultipartFile(
+                "file", "cover." + ext, "image/" + ("jpg".equals(ext) ? "jpeg" : ext), fetched.getBytes());
+
+        UploadFilesVo vo = new StorageDriver().upload(file, folder, AlbumEnum.IMAGE.getCode());
+        return vo.getUrl();
     }
 
     private void countryConvert(StarInfoCreateValidate starInfo){
