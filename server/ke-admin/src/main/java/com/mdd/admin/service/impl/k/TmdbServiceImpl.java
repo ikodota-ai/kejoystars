@@ -389,14 +389,30 @@ public class TmdbServiceImpl implements ITmdbService {
             put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0");
         }};
 
-        ImageDownloaderUtil.FetchedImage fetched;
-        try {
-            fetched = ImageDownloaderUtil.downloadImageAsBytes(imageUrl, headers);
-        } catch (IOException e) {
-            log.error("图片下载失败{}", imageUrl, e);
-            throw new OperateException("图片下载失败" + imageUrl);
+        // TMDb 尺寸自适应：优先大图，其次原图，最后保留原始地址
+        List<String> candidates = buildTmdbCandidates(imageUrl);
+
+        ImageDownloaderUtil.FetchedImage fetched = null;
+        IOException lastErr = null;
+        for (String candidate : candidates) {
+            try {
+                ImageDownloaderUtil.FetchedImage f = ImageDownloaderUtil.downloadImageAsBytes(candidate, headers);
+                if (f != null) {
+                    fetched = f;
+                    log.info("图片抓取成功，尺寸: {}KB，来源: {}", f.getBytes().length / 1024, candidate);
+                    break;
+                }
+                log.warn("图片过小，尝试下一档尺寸: {}", candidate);
+            } catch (IOException e) {
+                lastErr = e;
+                log.warn("图片下载失败({}): {}", candidate, e.getMessage());
+            }
         }
         if (fetched == null) {
+            if (lastErr != null) {
+                log.error("图片下载失败{}", imageUrl, lastErr);
+                throw new OperateException("图片下载失败" + imageUrl);
+            }
             throw new OperateException("图片过小或无效" + imageUrl);
         }
 
@@ -408,6 +424,61 @@ public class TmdbServiceImpl implements ITmdbService {
 
         UploadFilesVo vo = new StorageDriver().upload(file, folder, AlbumEnum.IMAGE.getCode());
         return vo.getUrl();
+    }
+
+    /**
+     * 针对 TMDb CDN 的图片 URL 构造尺寸候选列表：优先大图，其次 original，最后保留原地址
+     * 支持两种域名：
+     *   https://media.themoviedb.org/t/p/{size}/{path}
+     *   https://image.tmdb.org/t/p/{size}/{path}
+     * size 段包含 w300_and_h450_face / w600_and_h900_bestv2 / original 等
+     */
+    private List<String> buildTmdbCandidates(String imageUrl) {
+        List<String> list = new ArrayList<>();
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("^(https?://)(media\\.themoviedb\\.org|image\\.tmdb\\.org)(/t/p/)([^/]+)(/.+)$")
+                .matcher(imageUrl);
+        if (m.matches()) {
+            String scheme = m.group(1);
+            String host = "image.tmdb.org"; // 统一走开发者 CDN，尺寸档位更全
+            String prefix = m.group(3);
+            String size = m.group(4);
+            String path = m.group(5);
+            String upgradedSize = upgradeTmdbSize(size);
+            if (!upgradedSize.equals(size)) {
+                list.add(scheme + host + prefix + upgradedSize + path);
+            }
+            list.add(scheme + host + prefix + "original" + path);
+        }
+        // 最后回退到原始地址，避免非 TMDb 图片被误改
+        if (!list.contains(imageUrl)) list.add(imageUrl);
+        return list;
+    }
+
+    /**
+     * 把 wXXX_and_hYYY[_face|_bestv2] 之类的裁剪档位升级到更高的一档
+     */
+    private String upgradeTmdbSize(String size) {
+        if (size == null || size.isEmpty() || "original".equalsIgnoreCase(size)) return size;
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("^w(\\d+)_and_h(\\d+)(.*)$")
+                .matcher(size);
+        if (m.matches()) {
+            int w = Integer.parseInt(m.group(1));
+            int h = Integer.parseInt(m.group(2));
+            String suffix = m.group(3);
+            if (w < 600) {
+                return "w600_and_h900" + suffix;
+            }
+            return "w1280_and_h1920" + suffix;
+        }
+        m = java.util.regex.Pattern.compile("^w(\\d+)$").matcher(size);
+        if (m.matches()) {
+            int w = Integer.parseInt(m.group(1));
+            if (w < 780) return "w780";
+            return "original";
+        }
+        return size;
     }
 
     private void countryConvert(StarInfoCreateValidate starInfo){

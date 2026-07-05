@@ -99,7 +99,6 @@ public class ImageDownloaderUtil {
             if (bytes.length < MIN_IMAGE_BYTES) {
                 return null;
             }
-
             String ext = detectExtension(bytes, conn.getContentType(), imageUrl);
             return new FetchedImage(bytes, ext);
         } finally {
