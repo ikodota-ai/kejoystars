@@ -100,23 +100,13 @@ public class TmdbServiceImpl implements ITmdbService {
         String movieCover = "";
         Element coverElem = doc.selectFirst("main div.blurred img");
         if (coverElem != null) {
-            movieCover = coverElem.attr("src");
-            if (!movieCover.isEmpty()) {
-                try{
-                    //下载图片
-                    movieCover = grabImage(movieCover,  "image/movies/");
-                } catch(OperateException e){
-                    String[] srcset = coverElem.attr("srcset").split(",");
-                    for (String s : srcset) {
-                        movieCover = s.replaceAll("^\\s?(http[^\\s]+)\\s.*?$", "$1");
-                        try {
-                            movieCover = grabImage(movieCover, "image/movies/");
-                            break;
-                        } catch (IOException e1) {
-                            log.error(e1.getMessage());
-                            movieCover = coverElem.attr("src");
-                        }
-                    }
+            String rawCover = coverElem.attr("src");
+            if (!rawCover.isEmpty()) {
+                try {
+                    // grabImage 内已包含 TMDb 尺寸自适应 + original 兜底
+                    movieCover = grabImage(rawCover, "image/movies/");
+                } catch (OperateException e) {
+                    log.error("电影封面抓取失败: {}", rawCover, e);
                 }
             }
         }
@@ -333,26 +323,17 @@ public class TmdbServiceImpl implements ITmdbService {
                     if (imageEl != null) {
                         Element imgEl = imageEl.selectFirst("img");
                         if (imgEl != null) {
-                            String avatar = imgEl.attr("src");
-                            if (!avatar.isEmpty()) {
+                            String rawAvatar = imgEl.attr("src");
+                            String avatar = "";
+                            if (!rawAvatar.isEmpty()) {
                                 try {
-                                    avatar = grabImage(avatar, "image/star/avatar/");
-                                } catch (OperateException e){
-                                    String[] srcset = imgEl.attr("srcset").split(",");
-                                    for (String s : srcset) {
-                                        avatar = s.replaceAll("^\\s?(http[^\\s]+)\\s.*?$", "$1");
-                                        try {
-                                            avatar = grabImage(avatar, "image/star/avatar/");
-                                            break;
-                                        } catch (OperateException e1) {
-                                            log.error(e1.getMessage());
-                                            avatar = imgEl.attr("src");
-                                        }
-                                    }
+                                    // grabImage 内已包含 TMDb 尺寸自适应 + original 兜底
+                                    avatar = grabImage(rawAvatar, "image/star/avatar/");
+                                } catch (OperateException e) {
+                                    log.error("演员头像抓取失败: {}", rawAvatar, e);
                                 }
                             }
                             result.put("avatar", avatar);
-
                         }
                     }
                 }
