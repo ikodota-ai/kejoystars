@@ -59,6 +59,26 @@
                                     </el-option>
                                 </el-select>
                         </el-form-item>
+                        <el-form-item label="关联CP" prop="cpid">
+                            <el-select
+                                v-model="formData.cpid"
+                                class="w-[320px]"
+                                filterable
+                                remote
+                                reserve-keyword
+                                clearable
+                                placeholder="请输入CP名称搜索（可不选）"
+                                :remote-method="remoteCouple"
+                                :loading="coupleLoading"
+                            >
+                                <el-option
+                                    v-for="item in coupleOptions"
+                                    :key="item.value"
+                                    :label="item.label"
+                                    :value="item.value"
+                                />
+                            </el-select>
+                        </el-form-item>
                         <el-form-item label="链接">
                             <div class="w-80">
                                 <el-input
@@ -169,6 +189,7 @@
 import type { FormInstance } from 'element-plus'
 
 import { articleAdd, articleCateAll, articleDetail, articleEdit } from '@/api/article'
+import { coupleLists, coupleDetail } from '@/api/k/couple'
 import { useDictOptions } from '@/hooks/useDictOptions'
 import useMultipleTabs from '@/hooks/useMultipleTabs'
 import { moviesLists } from '@/api/k/Movies'
@@ -185,7 +206,7 @@ const formData = reactive({
     movieName:'',
     image: '',
     cid: 3,
-    cpid:0,
+    cpid: '',
     desc: '',
     author: '',
     content: '',
@@ -221,6 +242,26 @@ const rules = reactive({
 //     await feedback.confirm('未找到影视，请确认影视名称是否正确！')
 // }
 let options2: OptionItem[]
+const coupleOptions = ref<OptionItem[]>([])
+const coupleLoading = ref(false)
+
+const remoteCouple = async (query: string) => {
+    if (!query) {
+        coupleOptions.value = []
+        return
+    }
+    coupleLoading.value = true
+    try {
+        const data = await coupleLists({ name: query, page_size: 20 })
+        coupleOptions.value = (data.lists || []).map((item: any) => ({
+            value: item.id,
+            label: item.name
+        }))
+    } finally {
+        coupleLoading.value = false
+    }
+}
+
 const getDetails = async () => {
     const data = await articleDetail({
         id: route.query.id
@@ -237,6 +278,17 @@ const getDetails = async () => {
     })
 
     formData.createData = data.createTime
+
+    if (data.cpid) {
+        try {
+            const cp = await coupleDetail({ id: data.cpid })
+            if (cp && cp.name) {
+                coupleOptions.value = [{ value: data.cpid, label: cp.name }]
+            }
+        } catch (e) {
+            // ignore CP detail failure
+        }
+    }
 }
 
 const { optionsData } = useDictOptions<{
@@ -262,11 +314,16 @@ const handleSave = async () => {
             formData.movieName = options2[i].label
         }
     }
-    
+
+    const payload = {
+        ...formData,
+        cpid: formData.cpid === '' || formData.cpid == null ? null : Number(formData.cpid)
+    }
+
     if (route.query.id) {
-        await articleEdit(formData)
+        await articleEdit(payload)
     } else {
-        await articleAdd(formData)
+        await articleAdd(payload)
     }
 
     removeTab()
@@ -298,7 +355,13 @@ const remoteMethod2 = async (query:string) => {
 }
 
 onMounted(() => {
-  formData.cpid = Number(route.query.cpid) ;
+    if (!route.query.id && route.query.cpid) {
+        formData.cpid = Number(route.query.cpid)
+        const cp = route.query.cp ? String(route.query.cp) : ''
+        if (cp) {
+            coupleOptions.value = [{ value: formData.cpid, label: cp }]
+        }
+    }
 })
 
 route.query.id && getDetails()
