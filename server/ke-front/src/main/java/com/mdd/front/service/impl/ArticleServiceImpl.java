@@ -111,31 +111,25 @@ public class ArticleServiceImpl implements IArticleService {
         if (searchValidate.getDate()!=null && !searchValidate.getDate().isEmpty()) {
             queryWrapper.between("create_time", TimeUtils.dateToTimestamp(searchValidate.getDate()), TimeUtils.dateToTimestamp(searchValidate.getDate()) + 86400);
         }
-        String Cpids = "";
-        if (searchValidate.getCollect()!=null && searchValidate.getCollect() == 1) {
+        // 只看关注: collect==1 时按用户关注的CP过滤; 若一个都没关注则返回空结果
+        boolean onlyCollect = searchValidate.getCollect() != null && searchValidate.getCollect() == 1;
+        if (onlyCollect) {
             QueryWrapper<UserHistory> hQueryWrapper = new QueryWrapper<>();
             hQueryWrapper.select("s_m_id")
                     .eq("userid", userId)
                     .eq("type", "C");
-//                    .eq("status", YesNoEnum.YES.getCode());
             List<UserHistory> list = userHistoryMapper.selectList(hQueryWrapper);
             //将list 中所有SMId属性组成字符串，以","分隔
             List<String> smIdStrList = new ArrayList<>();
             for (UserHistory item : list) {
                 smIdStrList.add(item.getSMId().toString());
             }
-            Cpids = String.join(",", smIdStrList);
-//        } else if (searchValidate.getMovieId()!=null && !searchValidate.getMovieId().isEmpty()) {
-//            movieId = searchValidate.getMovieId();
-        }
-
-        if (!Cpids.isEmpty()) {
-//            String[] arr = Cpids.split(",");
-//            List<String> movieIds = Arrays.asList(arr);
-//            if (!movieIds.isEmpty()) {
-//                queryWrapper.apply("JSON_EXTRACT(movies, '$.id') IN (" + String.join(",", movieIds) + ")");
-            queryWrapper.apply("cpid IN (" + String.join(",", Cpids) + ")");
-//            }
+            String Cpids = String.join(",", smIdStrList);
+            if (Cpids.isEmpty()) {
+                // 未关注任何CP, 只看关注应返回空列表
+                return PageResult.iPageHandle(0L, (long) pageNo, (long) pageSize, new LinkedList<ArticleListedVo>());
+            }
+            queryWrapper.apply("cpid IN (" + Cpids + ")");
         }
 
         // sort 未传或未识别时，默认按 create_time DESC
