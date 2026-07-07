@@ -80,12 +80,15 @@ public class ArticleServiceImpl implements IArticleService {
         MPJQueryWrapper<Article> mpjQueryWrapper = new MPJQueryWrapper<Article>()
                 .selectAll(Article.class)
                 .select("ac.name as cateName")
+                .select("cp.name as cpName")
                 .innerJoin("?_article_cate ac ON ac.id=t.cid".replace("?_", GlobalConfig.tablePrefix))
+                .leftJoin("?_couple cp ON cp.id=t.cpid".replace("?_", GlobalConfig.tablePrefix))
                 .isNull("t.delete_time")
                 .orderByDesc(Arrays.asList("t.sort", "t.id"));
 
         articleMapper.setSearch(mpjQueryWrapper, searchValidate, new String[]{
                 "like:title@t.title:str",
+                "like:author@t.author:str",
                 "=:cid@t.cid:int",
                 "=:cpid@t.cpid:int",
                 "=:is_show@t.is_show:int",

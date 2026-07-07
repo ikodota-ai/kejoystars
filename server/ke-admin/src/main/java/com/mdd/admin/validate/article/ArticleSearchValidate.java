@@ -15,6 +15,9 @@ public class ArticleSearchValidate implements Serializable {
     @ApiModelProperty(value = "文章标题")
     private String title;
 
+    @ApiModelProperty(value = "作者")
+    private String author;
+
     @ApiModelProperty(value = "文章分类")
     private Integer cid;
 

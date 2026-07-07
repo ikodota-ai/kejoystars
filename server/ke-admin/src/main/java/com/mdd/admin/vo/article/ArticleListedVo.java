@@ -20,6 +20,12 @@ public class ArticleListedVo implements Serializable {
     @ApiModelProperty(value = "分类")
     private String cateName;
 
+    @ApiModelProperty(value = "CP编号")
+    private Integer cpid;
+
+    @ApiModelProperty(value = "CP名称")
+    private String cpName;
+
     @ApiModelProperty(value = "标题")
     private String title;
 
