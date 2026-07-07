@@ -43,7 +43,7 @@
                         v-model="formData.installUrl"
                         type="textarea"
                         :autosize="{ minRows: 2, maxRows: 3 }"
-                        placeholder="iOS: itms-services://... 或分发平台链接; Android: apk 直链"
+                        placeholder="支持第三方安装页URL / itms-services:// / apk直链, 客户端会用系统或浏览器打开"
                         clearable
                     />
                 </el-form-item>
