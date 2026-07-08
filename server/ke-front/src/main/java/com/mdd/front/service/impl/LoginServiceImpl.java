@@ -91,6 +91,17 @@ public class LoginServiceImpl implements ILoginService {
         long now = System.currentTimeMillis() / 1000;
         user.setCreateTime(now);
         user.setUpdateTime(now);
+        this.__grantFreeVip(user, now);
+        userMapper.insert(user);
+    }
+
+    /**
+     * 赠送注册免费会员(按后台配置的天数)
+     *
+     * @param user 用户对象
+     * @param now  当前时间戳(秒)
+     */
+    private void __grantFreeVip(User user, long now) {
         int freeVipDays = 0;
         try {
             freeVipDays = Integer.parseInt(ConfigUtils.get("user", "free_vip_days", "0"));
@@ -99,7 +110,6 @@ public class LoginServiceImpl implements ILoginService {
             user.setVipExpired((int) (now + 60L * 60 * 24 * freeVipDays));
             user.setVipDownCount(50);
         }
-        userMapper.insert(user);
     }
 
     /**
@@ -178,10 +188,12 @@ public class LoginServiceImpl implements ILoginService {
             model.setChannel(terminal);
             model.setSex(0);
             model.setLoginIp(IpUtils.getHostIp());
-            model.setLoginTime(System.currentTimeMillis() / 1000);
-            model.setUpdateTime(System.currentTimeMillis() / 1000);
-            model.setCreateTime(System.currentTimeMillis() / 1000);
+            long now = System.currentTimeMillis() / 1000;
+            model.setLoginTime(now);
+            model.setUpdateTime(now);
+            model.setCreateTime(now);
             model.setIsNewUser(1);
+            this.__grantFreeVip(model, now);
             userMapper.insert(model);
             user = model;
             return this.__loginToken(user.getId(), user.getMobile(), user.getIsNewUser(), terminal, registrationId);
