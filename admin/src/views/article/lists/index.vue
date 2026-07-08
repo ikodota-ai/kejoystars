@@ -93,6 +93,7 @@
                             :preview-src-list="[row.image]"
                             preview-teleported
                             fit="contain"
+                            lazy
                         />
                     </template>
                 </el-table-column>
