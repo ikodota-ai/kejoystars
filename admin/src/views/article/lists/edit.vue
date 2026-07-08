@@ -173,7 +173,7 @@
                     </div>
                     <div class="xl:ml-20">
                         <el-form-item label="文章内容" prop="content">
-                            <editor v-model="formData.content" :height="367" />
+                            <editor v-if="editorReady" v-model="formData.content" :height="367" />
                         </el-form-item>
                     </div>
                 </div>
@@ -197,6 +197,7 @@ import feedback from '@/utils/feedback'
 
 let selectKey = 0;
 const route = useRoute()
+const editorReady = ref(false)
 const router = useRouter()
 const formData = reactive({
     id: '',
@@ -281,7 +282,10 @@ const getDetails = async () => {
     }
     Object.keys(formData).forEach((key) => {
         //@ts-ignore
-        formData[key] = data[key]
+        if (data[key] !== null && data[key] !== undefined) {
+            //@ts-ignore
+            formData[key] = data[key]
+        }
     })
 
     formData.createData = data.createTime
@@ -296,6 +300,7 @@ const getDetails = async () => {
             // ignore CP detail failure
         }
     }
+    editorReady.value = true
 }
 
 const { optionsData } = useDictOptions<{
@@ -371,5 +376,9 @@ onMounted(() => {
     }
 })
 
-route.query.id && getDetails()
+if (route.query.id) {
+    getDetails()
+} else {
+    editorReady.value = true
+}
 </script>
