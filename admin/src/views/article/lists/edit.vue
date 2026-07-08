@@ -263,6 +263,42 @@ const remoteCouple = async (query: string) => {
     }
 }
 
+// 规整富文本内容，避免 wangEditor(Slate) 顶层出现裸文本/行内节点报错
+const normalizeEditorHtml = (html: string): string => {
+    if (!html) return ''
+    const inlineTags = [
+        'A', 'SPAN', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'SUB', 'SUP',
+        'FONT', 'CODE', 'MARK', 'SMALL', 'BR', 'IMG'
+    ]
+    const container = document.createElement('div')
+    container.innerHTML = html
+    const result = document.createElement('div')
+    let buffer: Node[] = []
+    const flush = () => {
+        if (!buffer.length) return
+        const p = document.createElement('p')
+        buffer.forEach((n) => p.appendChild(n))
+        result.appendChild(p)
+        buffer = []
+    }
+    Array.from(container.childNodes).forEach((node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+            if ((node.textContent || '').trim() === '') return
+            buffer.push(node.cloneNode(true))
+        } else if (
+            node.nodeType === Node.ELEMENT_NODE &&
+            inlineTags.includes((node as HTMLElement).tagName)
+        ) {
+            buffer.push(node.cloneNode(true))
+        } else {
+            flush()
+            result.appendChild(node.cloneNode(true))
+        }
+    })
+    flush()
+    return result.innerHTML
+}
+
 const getDetails = async () => {
     const data = await articleDetail({
         id: route.query.id
@@ -288,6 +324,7 @@ const getDetails = async () => {
         }
     })
 
+    formData.content = normalizeEditorHtml(formData.content)
     formData.createData = data.createTime
 
     if (data.cpid) {
