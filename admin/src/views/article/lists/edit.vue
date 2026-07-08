@@ -241,7 +241,7 @@ const rules = reactive({
 
 //     await feedback.confirm('未找到影视，请确认影视名称是否正确！')
 // }
-let options2: OptionItem[]
+let options2: OptionItem[] = []
 const coupleOptions = ref<OptionItem[]>([])
 const coupleLoading = ref(false)
 
@@ -266,11 +266,18 @@ const getDetails = async () => {
     const data = await articleDetail({
         id: route.query.id
     })
-    if(data.movies != '' && data.movies != 'null') {
-        let movies = JSON.parse(data.movies)
-        formData.movieId = movies.id
-        formData.movieName = movies.name
-        options2 = [{"value": formData.movieId, "label":formData.movieName}]
+    if (data.movies && data.movies !== '' && data.movies !== 'null') {
+        let movies = null
+        try {
+            movies = JSON.parse(data.movies)
+        } catch (e) {
+            movies = null
+        }
+        if (movies && movies.id) {
+            formData.movieId = movies.id
+            formData.movieName = movies.name
+            options2 = [{ value: formData.movieId, label: formData.movieName }]
+        }
     }
     Object.keys(formData).forEach((key) => {
         //@ts-ignore
