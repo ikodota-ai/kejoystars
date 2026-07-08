@@ -20,4 +20,7 @@ public class SettingUserValidate implements Serializable {
     @ApiModelProperty(value = "注册赠送会员天数(0=不赠送)")
     private Integer freeVipDays = 0;
 
+    @ApiModelProperty(value = "注册成功提示语(支持{days}占位符)")
+    private String registerTip = "";
+
 }

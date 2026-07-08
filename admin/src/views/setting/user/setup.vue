@@ -34,6 +34,25 @@
                         </div>
                     </div>
                 </el-form-item>
+                <el-form-item label="注册成功提示语">
+                    <div class="w-[420px]">
+                        <el-input
+                            v-model="formData.register_tip"
+                            type="textarea"
+                            :autosize="{ minRows: 2, maxRows: 4 }"
+                            maxlength="200"
+                            show-word-limit
+                            placeholder="恭喜你注册成功，作为首次注册用户你已享有{days}天免费会员，可下载IG,X图片"
+                        />
+                    </div>
+                </el-form-item>
+                <el-form-item>
+                    <div>
+                        <div class="form-tips">
+                            注册成功后返回的提示文字，仅在赠送天数大于 0 时显示；使用 {days} 表示实际赠送天数
+                        </div>
+                    </div>
+                </el-form-item>
             </el-form>
         </el-card>
 
@@ -49,7 +68,8 @@ import { getUserSetup, setUserSetup } from '@/api/setting/user'
 // 表单数据
 const formData = reactive({
     default_avatar: '', // 用户默认头像
-    free_vip_days: 0 // 注册赠送会员天数
+    free_vip_days: 0, // 注册赠送会员天数
+    register_tip: '' // 注册成功提示语
 })
 
 // 获取用户设置数据

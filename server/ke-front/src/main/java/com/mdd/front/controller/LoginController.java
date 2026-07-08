@@ -60,7 +60,11 @@ public class LoginController {
             freeVipDays = Integer.parseInt(ConfigUtils.get("user", "free_vip_days", "0"));
         } catch (NumberFormatException ignored) {}
         if (freeVipDays > 0) {
-            return AjaxResult.success("恭喜你注册成功，作为首次注册用户你已享有" + freeVipDays + "天免费会员，可下载IG,X图片");
+            String tip = ConfigUtils.get("user", "register_tip", "恭喜你注册成功，作为首次注册用户你已享有{days}天免费会员，可下载IG,X图片");
+            if (StringUtils.isNull(tip) || StringUtils.isEmpty(tip)) {
+                tip = "恭喜你注册成功，作为首次注册用户你已享有{days}天免费会员，可下载IG,X图片";
+            }
+            return AjaxResult.success(tip.replace("{days}", String.valueOf(freeVipDays)));
         }
         return AjaxResult.success("注册成功");
     }

@@ -26,6 +26,7 @@ public class SettingUserServiceImpl implements ISettingUserService {
         vo.setDefaultAvatar(UrlUtils.toAdminAbsoluteUrl(defaultAvatar));
         String freeVipDays = ConfigUtils.get("user", "free_vip_days", "0");
         vo.setFreeVipDays(Integer.parseInt(freeVipDays));
+        vo.setRegisterTip(ConfigUtils.get("user", "register_tip", "恭喜你注册成功，作为首次注册用户你已享有{days}天免费会员，可下载IG,X图片"));
         return vo;
     }
 
@@ -40,6 +41,7 @@ public class SettingUserServiceImpl implements ISettingUserService {
         ConfigUtils.set("default_image", "user_avatar", UrlUtils.toRelativeUrl(userValidate.getDefaultAvatar()));
         Integer freeVipDays = userValidate.getFreeVipDays() == null ? 0 : userValidate.getFreeVipDays();
         ConfigUtils.set("user", "free_vip_days", String.valueOf(freeVipDays));
+        ConfigUtils.set("user", "register_tip", userValidate.getRegisterTip() == null ? "" : userValidate.getRegisterTip());
     }
 
 }
