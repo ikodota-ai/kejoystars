@@ -16,6 +16,24 @@
                         </div>
                     </div>
                 </el-form-item>
+                <el-form-item label="注册赠送会员天数">
+                    <div class="w-80">
+                        <el-input-number
+                            v-model="formData.free_vip_days"
+                            :min="0"
+                            :step="1"
+                            :precision="0"
+                            controls-position="right"
+                        />
+                    </div>
+                </el-form-item>
+                <el-form-item>
+                    <div>
+                        <div class="form-tips">
+                            新用户注册时赠送的免费会员天数，填 0 表示不赠送
+                        </div>
+                    </div>
+                </el-form-item>
             </el-form>
         </el-card>
 
@@ -30,7 +48,8 @@ import { getUserSetup, setUserSetup } from '@/api/setting/user'
 
 // 表单数据
 const formData = reactive({
-    default_avatar: '' // 用户默认头像
+    default_avatar: '', // 用户默认头像
+    free_vip_days: 0 // 注册赠送会员天数
 })
 
 // 获取用户设置数据

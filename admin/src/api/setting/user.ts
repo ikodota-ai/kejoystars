@@ -13,7 +13,7 @@ export function getUserSetup() {
  * @param { string } default_avatar 默认用户头像
  * @description 设置用户设置
  */
-export function setUserSetup(params: { default_avatar: string }) {
+export function setUserSetup(params: { default_avatar: string; free_vip_days: number }) {
     return request.post({ url: '/setting.user.user/setConfig', params })
 }
 

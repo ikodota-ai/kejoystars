@@ -15,4 +15,7 @@ public class SettingUserVo implements Serializable {
     @ApiModelProperty(value = "默认头像")
     private String defaultAvatar;
 
+    @ApiModelProperty(value = "注册赠送会员天数(0=不赠送)")
+    private Integer freeVipDays;
+
 }

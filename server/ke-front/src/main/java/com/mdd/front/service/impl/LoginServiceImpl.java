@@ -88,8 +88,17 @@ public class LoginServiceImpl implements ILoginService {
         user.setAvatar(defaultAvatar);
         user.setChannel(terminal);
         user.setIsNewUser(1);
-        user.setCreateTime(System.currentTimeMillis() / 1000);
-        user.setUpdateTime(System.currentTimeMillis() / 1000);
+        long now = System.currentTimeMillis() / 1000;
+        user.setCreateTime(now);
+        user.setUpdateTime(now);
+        int freeVipDays = 0;
+        try {
+            freeVipDays = Integer.parseInt(ConfigUtils.get("user", "free_vip_days", "0"));
+        } catch (NumberFormatException ignored) {}
+        if (freeVipDays > 0) {
+            user.setVipExpired((int) (now + 60L * 60 * 24 * freeVipDays));
+            user.setVipDownCount(50);
+        }
         userMapper.insert(user);
     }
 

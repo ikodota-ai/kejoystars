@@ -6,6 +6,7 @@ import com.mdd.common.core.AjaxResult;
 import com.mdd.common.enums.ClientEnum;
 import com.mdd.common.exception.OperateException;
 import com.mdd.common.plugin.notice.NoticeCheck;
+import com.mdd.common.util.ConfigUtils;
 import com.mdd.common.util.StringUtils;
 import com.mdd.front.LikeFrontThreadLocal;
 import com.mdd.front.service.ILoginService;
@@ -54,7 +55,14 @@ public class LoginController {
         String password = registerValidate.getPassword();
 
         iLoginService.register(account, password, terminal);
-        return AjaxResult.success();
+        int freeVipDays = 0;
+        try {
+            freeVipDays = Integer.parseInt(ConfigUtils.get("user", "free_vip_days", "0"));
+        } catch (NumberFormatException ignored) {}
+        if (freeVipDays > 0) {
+            return AjaxResult.success("恭喜你注册成功，作为首次注册用户你已享有" + freeVipDays + "天免费会员，可下载IG,X图片");
+        }
+        return AjaxResult.success("注册成功");
     }
 
     @NotLogin
