@@ -31,7 +31,7 @@ public class ArticleUpdateValidate implements Serializable {
     private Integer cpid;
 
     @NotEmpty(message = "文章标题不能为空")
-    @Length(min = 1, max = 200, message = "文章标题不能大于200个字符")
+    @Length(min = 1, max = 100, message = "文章标题不能大于100个字符")
     @ApiModelProperty(value = "文章标题", required = true)
     private String title;
 
@@ -49,8 +49,7 @@ public class ArticleUpdateValidate implements Serializable {
     @ApiModelProperty(value = "关联影视", required = true)
     private String movieName;
 
-    @Length(max = 200, message = "简介不能超出200个字符")
-    @ApiModelProperty(value = "文章简介")
+    @ApiModelProperty(value = "文章摘要")
     @JsonProperty("abstract")
     private String abstractFied = "";
 
@@ -76,6 +75,7 @@ public class ArticleUpdateValidate implements Serializable {
     private String content = "";
 
     @ApiModelProperty(value = "文章描述")
+    @Length(max = 250, message = "简介不能超出250个字符")
     private String desc = "";
 
     @DecimalMin(value = "0", message = "初始浏览量不能少于0")

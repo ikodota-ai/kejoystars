@@ -19,7 +19,7 @@
                                     v-model="formData.title"
                                     placeholder="请输入文章标题"
                                     :autosize="{ minRows: 3, maxRows: 3 }"
-                                    maxlength="64"
+                                    maxlength="100"
                                     show-word-limit
                                     clearable
                                 />
@@ -125,8 +125,6 @@
                                     type="textarea"
                                     :autosize="{ minRows: 6, maxRows: 6 }"
                                     v-model="formData.abstract"
-                                    maxlength="200"
-                                    show-word-limit
                                     clearable
                                 />
                             </div>
