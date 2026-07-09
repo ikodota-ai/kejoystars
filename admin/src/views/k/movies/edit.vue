@@ -117,15 +117,23 @@
                                 <el-col :span="12">
                                     <div class="grid-content bg-purple-light">
                                         <el-form-item label="关联明星">
-                                            <el-input  class="w-[211px]"
-                                                v-model="star"
-                                                placeholder="请输入明星"
-                                                type="text"
-                                                :autosize="{ minRows: 3, maxRows: 3 }"
-                                                maxlength="64"
-                                                show-word-limit
+                                            <el-select class="w-[211px]"
+                                                v-model="selectedSid"
+                                                filterable
+                                                remote
+                                                reserve-keyword
                                                 clearable
-                                            />
+                                                placeholder="搜索明星(中/英文名)"
+                                                :remote-method="remoteStar"
+                                                :loading="starLoading"
+                                            >
+                                                <el-option
+                                                    v-for="item in starOptions"
+                                                    :key="item.value"
+                                                    :label="item.label"
+                                                    :value="item.value"
+                                                />
+                                            </el-select>
                                         </el-form-item>
                                     </div>
                                 </el-col>
@@ -220,8 +228,34 @@ interface Actor {
 }
 
 const actorList = ref<Actor[]>([])
-let star = ref('')
 let cosplay = ref('')
+
+interface StarOption {
+  value: number
+  label: string
+  name: string
+}
+const starOptions = ref<StarOption[]>([])
+const starLoading = ref(false)
+const selectedSid = ref<number | ''>('')
+
+const remoteStar = async (query: string) => {
+    if (!query) {
+        starOptions.value = []
+        return
+    }
+    starLoading.value = true
+    try {
+        const data = await starLists({ name: query, page_size: 20 })
+        starOptions.value = (data.lists || []).map((item: any) => ({
+            value: item.id,
+            name: item.name,
+            label: item.enName ? `${item.name}（${item.enName}）` : item.name
+        }))
+    } finally {
+        starLoading.value = false
+    }
+}
 const formData = reactive({
     id: '',
     movieName: '',
@@ -332,25 +366,23 @@ const getCountry = async () => {
 }
 
 const addActor = async()=>{
-    //查找明星是否存在，不存在则提示
-    const stars = await starLists({"name":star.value});
-
-    if(stars.count == 1) {
-        actorList.value.push({"star": star.value, "cosplay": cosplay.value, "sid":stars.lists[0].id});
-    } else if(stars.count > 1) {
-        let sid = 0;
-        for(const i in stars.lists) {
-            if(stars.list[i].name == star.value) {
-                sid = stars.lists[i].id;
-                actorList.value.push({"star": star.value, "cosplay": cosplay.value, "sid" : sid});
-            }
-        }
-        if(sid == 0)await feedback.confirm('未找到当前明信息！')
-    } else {
-        await feedback.confirm('未找到当前明信息！')
+    if (!selectedSid.value) {
+        await feedback.confirm('请先搜索并选择明星！')
+        return
     }
+    const selected = starOptions.value.find(item => item.value === selectedSid.value)
+    if (!selected) {
+        await feedback.confirm('请先搜索并选择明星！')
+        return
+    }
+    if (actorList.value.some(item => item.sid === selected.value)) {
+        await feedback.confirm('该明星已添加！')
+        return
+    }
+    actorList.value.push({ star: selected.name, cosplay: cosplay.value, sid: selected.value })
     setTimeout(() => {
-        star.value = ""
+        selectedSid.value = ''
+        starOptions.value = []
         cosplay.value = ""
     }, 200) // 防抖300ms
 }
