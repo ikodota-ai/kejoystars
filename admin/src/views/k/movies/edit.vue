@@ -126,6 +126,7 @@
                                                 placeholder="搜索明星(中/英文名)"
                                                 :remote-method="remoteStar"
                                                 :loading="starLoading"
+                                                @change="onStarChange"
                                             >
                                                 <el-option
                                                     v-for="item in starOptions"
@@ -238,6 +239,7 @@ interface StarOption {
 const starOptions = ref<StarOption[]>([])
 const starLoading = ref(false)
 const selectedSid = ref<number | ''>('')
+const selectedStar = ref<StarOption | null>(null)
 
 const remoteStar = async (query: string) => {
     if (!query) {
@@ -255,6 +257,11 @@ const remoteStar = async (query: string) => {
     } finally {
         starLoading.value = false
     }
+}
+
+// 选中明星时立即记录, 避免失焦后 starOptions 被清空导致取不到
+const onStarChange = (val: number | '') => {
+    selectedStar.value = starOptions.value.find(item => item.value === val) || null
 }
 const formData = reactive({
     id: '',
@@ -366,11 +373,7 @@ const getCountry = async () => {
 }
 
 const addActor = async()=>{
-    if (!selectedSid.value) {
-        await feedback.confirm('请先搜索并选择明星！')
-        return
-    }
-    const selected = starOptions.value.find(item => item.value === selectedSid.value)
+    const selected = selectedStar.value
     if (!selected) {
         await feedback.confirm('请先搜索并选择明星！')
         return
@@ -382,6 +385,7 @@ const addActor = async()=>{
     actorList.value.push({ star: selected.name, cosplay: cosplay.value, sid: selected.value })
     setTimeout(() => {
         selectedSid.value = ''
+        selectedStar.value = null
         starOptions.value = []
         cosplay.value = ""
     }, 200) // 防抖300ms
