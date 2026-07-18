@@ -48,7 +48,7 @@
                 <el-table-column label="邀请人数" prop="inviteCount" min-width="100" />
                 <el-table-column label="糖果数" prop="userMoney" min-width="100" />
                 <el-table-column label="VIP剩余天数" prop="vipExpired" min-width="100" />
-                <el-table-column label="操作" width="120" fixed="right">
+                <el-table-column label="操作" width="180" fixed="right">
                     <template #default="{ row }">
                         <el-button v-perms="['user.user/detail']" type="primary" link>
                             <router-link
@@ -62,6 +62,14 @@
                                 详情
                             </router-link>
                         </el-button>
+                        <el-button
+                            v-perms="['user.user/gift']"
+                            type="primary"
+                            link
+                            @click="openGift(row)"
+                        >
+                            赠送VIP
+                        </el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -69,13 +77,20 @@
                 <pagination v-model="pager" @change="getLists" />
             </div>
         </el-card>
+        <vip-gift
+            v-model:show="giftState.show"
+            :vip-remain="giftState.vipRemain"
+            @confirm="onGiftConfirm"
+        />
     </div>
 </template>
 <script lang="ts" setup name="consumerLists">
-import { getUserList } from '@/api/consumer'
+import { getUserList, giftVip } from '@/api/consumer'
 import { ClientMap } from '@/enums/appEnums'
 import { usePaging } from '@/hooks/usePaging'
 import { getRoutePath } from '@/router'
+import VipGift from '../components/vip-gift.vue'
+import feedback from '@/utils/feedback'
 
 const queryParams = reactive({
     keyword: '',
@@ -88,6 +103,24 @@ const { pager, getLists, resetPage, resetParams } = usePaging({
     fetchFun: getUserList,
     params: queryParams
 })
+
+const giftState = reactive({
+    show: false,
+    userId: 0 as number,
+    vipRemain: 0 as number
+})
+const openGift = (row: any) => {
+    giftState.show = true
+    giftState.userId = row.id
+    giftState.vipRemain = row.vipExpired || 0
+}
+const onGiftConfirm = async (payload: any) => {
+    await giftVip({ user_id: giftState.userId, ...payload })
+    feedback.msgSuccess('赠送成功')
+    giftState.show = false
+    getLists()
+}
+
 onActivated(() => {
     getLists()
 })

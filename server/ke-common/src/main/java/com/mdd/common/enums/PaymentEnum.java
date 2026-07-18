@@ -10,7 +10,8 @@ public enum PaymentEnum {
 
     WALLET_PAY(1, "余额支付"),
     WX_PAY(2, "微信支付"),
-    ALI_PAY(3, "支付宝支付");
+    ALI_PAY(3, "支付宝支付"),
+    GIFT_PAY(4, "后台赠送");
 
     /**
      * 构造方法
@@ -57,6 +58,8 @@ public enum PaymentEnum {
                 return "微信支付";
             case 3:
                 return "支付宝支付";
+            case 4:
+                return "后台赠送";
         }
         return "未知";
     }

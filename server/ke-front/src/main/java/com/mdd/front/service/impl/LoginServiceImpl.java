@@ -16,6 +16,7 @@ import com.mdd.common.exception.OperateException;
 import com.mdd.common.mapper.user.UserAuthMapper;
 import com.mdd.common.mapper.user.UserMapper;
 import com.mdd.common.mapper.user.UserSessionMapper;
+import com.mdd.common.mapper.RechargeOrderMapper;
 import com.mdd.common.plugin.notice.NoticeCheck;
 import com.mdd.common.plugin.wechat.WxMnpDriver;
 import com.mdd.common.util.*;
@@ -54,6 +55,11 @@ public class LoginServiceImpl implements ILoginService {
     UserAuthMapper userAuthMapper;
     @Resource
     UserSessionMapper userSessionMapper;
+    @Resource
+    RechargeOrderMapper rechargeOrderMapper;
+
+    /** 注册赠送批次标识 (系统字典 gift_batch 中的固定值) */
+    private static final String GIFT_BATCH_NEW_USER = "gift_new_user";
 
     /**
      * 注册账号
@@ -91,35 +97,22 @@ public class LoginServiceImpl implements ILoginService {
         long now = System.currentTimeMillis() / 1000;
         user.setCreateTime(now);
         user.setUpdateTime(now);
-        this.__grantFreeVip(user, now);
+        int freeDays = this.__parseFreeVipDays();
+        VipGrantHelper.adjustVipExpire(user, freeDays);
         userMapper.insert(user);
+        if (freeDays > 0) {
+            VipGrantHelper.writeGiftOrder(rechargeOrderMapper, user.getId(), freeDays, GIFT_BATCH_NEW_USER);
+        }
     }
 
     /**
-     * 赠送注册免费会员(按后台配置的天数)
-     *
-     * @param user 用户对象
-     * @param now  当前时间戳(秒)
+     * 读取后台配置的注册赠送天数
      */
-    private void __grantFreeVip(User user, long now) {
-        int freeVipDays = 0;
+    private int __parseFreeVipDays() {
         try {
-            freeVipDays = Integer.parseInt(ConfigUtils.get("user", "free_vip_days", "0"));
-        } catch (NumberFormatException ignored) {}
-        if (freeVipDays > 0) {
-            long addSeconds = 60L * 60 * 24 * freeVipDays;
-            Integer current = user.getVipExpired();
-            if (current == null || current <= now) {
-                // 未开通或已过期: 从当前时间起算
-                user.setVipExpired((int) (now + addSeconds));
-                user.setVipDownCount(50);
-            } else {
-                // 已是有效会员: 在原到期时间上叠加, 与充值逻辑一致
-                user.setVipExpired((int) (current + addSeconds));
-                if (user.getVipDownCount() == null || user.getVipDownCount() <= 0 || user.getVipDownCount() > 50) {
-                    user.setVipDownCount(50);
-                }
-            }
+            return Integer.parseInt(ConfigUtils.get("user", "free_vip_days", "0"));
+        } catch (NumberFormatException ignored) {
+            return 0;
         }
     }
 
@@ -204,8 +197,12 @@ public class LoginServiceImpl implements ILoginService {
             model.setUpdateTime(now);
             model.setCreateTime(now);
             model.setIsNewUser(1);
-            this.__grantFreeVip(model, now);
+            int freeDays = this.__parseFreeVipDays();
+            VipGrantHelper.adjustVipExpire(model, freeDays);
             userMapper.insert(model);
+            if (freeDays > 0) {
+                VipGrantHelper.writeGiftOrder(rechargeOrderMapper, model.getId(), freeDays, GIFT_BATCH_NEW_USER);
+            }
             user = model;
             return this.__loginToken(user.getId(), user.getMobile(), user.getIsNewUser(), terminal, registrationId);
         }

@@ -12,6 +12,7 @@ import com.mdd.admin.validate.user.UserSearchValidate;
 import com.mdd.admin.validate.user.UserUpdateValidate;
 import com.mdd.admin.validate.commons.PageValidate;
 import com.mdd.admin.validate.user.UserWalletValidate;
+import com.mdd.admin.validate.user.UserGiftValidate;
 import com.mdd.admin.vo.user.UserListExportVo;
 import com.mdd.admin.vo.user.UserVo;
 import com.mdd.common.core.PageResult;
@@ -21,6 +22,7 @@ import com.mdd.common.enums.ClientEnum;
 import com.mdd.common.enums.LogMoneyEnum;
 import com.mdd.common.exception.OperateException;
 import com.mdd.common.mapper.UserCheckInMapper;
+import com.mdd.common.mapper.RechargeOrderMapper;
 import com.mdd.common.mapper.log.UserAccountLogMapper;
 import com.mdd.common.mapper.user.UserMapper;
 import com.mdd.common.util.*;
@@ -50,6 +52,9 @@ public class UserServiceImpl implements IUserService {
 
     @Resource
     UserAccountLogMapper logMoneyMapper;
+
+    @Resource
+    RechargeOrderMapper rechargeOrderMapper;
 
     /**
      * 用户列表
@@ -259,6 +264,28 @@ public class UserServiceImpl implements IUserService {
 
         user.setUserMoney(surplusAmount);
         userMapper.updateById(user);
+    }
+
+    /**
+     * 后台赠送VIP (幂等)
+     */
+    @Override
+    @Transactional
+    public void giftVip(UserGiftValidate giftValidate) {
+        User user = userMapper.selectOne(new QueryWrapper<User>()
+                .eq("id", giftValidate.getUserId())
+                .isNull("delete_time")
+                .last("limit 1"));
+        Assert.notNull(user, "用户不存在!");
+
+        if (VipGrantHelper.hasGranted(rechargeOrderMapper, user.getId(), giftValidate.getBatchKey())) {
+            throw new OperateException("该用户已领取过该批次赠送, 不能重复赠送");
+        }
+        boolean ok = VipGrantHelper.grant(userMapper, rechargeOrderMapper, user,
+                giftValidate.getDays(), giftValidate.getBatchKey());
+        if (!ok) {
+            throw new OperateException("赠送失败, 请检查参数");
+        }
     }
 
     @Override

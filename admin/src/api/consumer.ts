@@ -19,3 +19,8 @@ export function userEdit(params: any) {
 export function adjustMoney(params: any) {
     return request.post({ url: '/user.user/adjustMoney', params })
 }
+
+// 赠送VIP
+export function giftVip(params: any) {
+    return request.post({ url: '/user.user/gift', params })
+}

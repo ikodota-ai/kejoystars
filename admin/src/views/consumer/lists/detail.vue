@@ -24,6 +24,20 @@
                             </el-button>
                         </div>
                     </div>
+                    <div class="basis-40 flex flex-col justify-center items-center">
+                        <div class="text-tx-regular">VIP剩余</div>
+                        <div class="mt-2 flex items-center">
+                            {{ formData.vip_expired > 0 ? formData.vip_expired + ' 天' : '未开通' }}
+                            <el-button
+                                v-perms="['user.user/gift']"
+                                type="primary"
+                                link
+                                @click="handleGift"
+                            >
+                                赠送
+                            </el-button>
+                        </div>
+                    </div>
                 </div>
                 <el-form-item label="用户昵称：">
                     {{ formData.nickname }}
@@ -105,16 +119,23 @@
             :value="adjustState.value"
             @confirm="handleConfirmAdjust"
         />
+        <vip-gift
+            v-model:show="giftState.show"
+            :vip-remain="formData.vip_expired || 0"
+            @confirm="handleConfirmGift"
+        />
     </div>
 </template>
 
 <script lang="ts" setup name="consumerDetail">
 import type { FormInstance } from 'element-plus'
 
-import { adjustMoney, getUserDetail, userEdit } from '@/api/consumer'
+import { adjustMoney, getUserDetail, userEdit, giftVip } from '@/api/consumer'
 import { isEmpty } from '@/utils/util'
+import feedback from '@/utils/feedback'
 
 import AccountAdjust from '../components/account-adjust.vue'
+import VipGift from '../components/vip-gift.vue'
 
 const route = useRoute()
 const formData = reactive({
@@ -128,13 +149,26 @@ const formData = reactive({
     sex: 0,
     sn: '',
     account: '',
-    user_money: ''
+    user_money: '',
+    vip_expired: 0
 })
 
 const adjustState = reactive({
     show: false,
     value: ''
 })
+const giftState = reactive({
+    show: false
+})
+const handleGift = () => {
+    giftState.show = true
+}
+const handleConfirmGift = async (payload: any) => {
+    await giftVip({ user_id: route.query.id, ...payload })
+    feedback.msgSuccess('赠送成功')
+    giftState.show = false
+    getDetails()
+}
 const formRef = shallowRef<FormInstance>()
 
 const getDetails = async () => {

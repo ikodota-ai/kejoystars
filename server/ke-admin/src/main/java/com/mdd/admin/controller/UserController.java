@@ -7,6 +7,7 @@ import com.mdd.admin.validate.user.UserSearchValidate;
 import com.mdd.admin.validate.user.UserUpdateValidate;
 import com.mdd.admin.validate.commons.PageValidate;
 import com.mdd.admin.validate.user.UserWalletValidate;
+import com.mdd.admin.validate.user.UserGiftValidate;
 import com.mdd.admin.vo.user.UserVo;
 import com.mdd.common.core.AjaxResult;
 import com.mdd.common.core.PageResult;
@@ -66,6 +67,14 @@ public class UserController {
     @ApiOperation(value="余额调整")
     public AjaxResult<Object> adjustWallet(@Validated @RequestBody UserWalletValidate walletValidate) {
         iUserService.adjustWallet(walletValidate);
+        return AjaxResult.success();
+    }
+
+    @Log(title = "赠送VIP")
+    @PostMapping("/gift")
+    @ApiOperation(value = "赠送VIP")
+    public AjaxResult<Object> gift(@Validated @RequestBody UserGiftValidate giftValidate) {
+        iUserService.giftVip(giftValidate);
         return AjaxResult.success();
     }
 

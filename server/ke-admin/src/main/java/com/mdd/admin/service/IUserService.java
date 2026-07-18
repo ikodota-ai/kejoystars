@@ -5,6 +5,7 @@ import com.mdd.admin.validate.user.UserSearchValidate;
 import com.mdd.admin.validate.user.UserUpdateValidate;
 import com.mdd.admin.validate.commons.PageValidate;
 import com.mdd.admin.validate.user.UserWalletValidate;
+import com.mdd.admin.validate.user.UserGiftValidate;
 import com.mdd.admin.vo.user.UserVo;
 import com.mdd.common.core.PageResult;
 
@@ -47,6 +48,11 @@ public interface IUserService {
      * @param userWalletValidate 余额
      */
     void adjustWallet(UserWalletValidate userWalletValidate);
+
+    /**
+     * 后台赠送VIP (按天数, 幂等: 同用户同批次仅一次)
+     */
+    void giftVip(UserGiftValidate giftValidate);
 
     /**
      * 返回导出格式
