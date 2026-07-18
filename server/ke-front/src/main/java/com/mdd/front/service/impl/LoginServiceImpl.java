@@ -107,8 +107,19 @@ public class LoginServiceImpl implements ILoginService {
             freeVipDays = Integer.parseInt(ConfigUtils.get("user", "free_vip_days", "0"));
         } catch (NumberFormatException ignored) {}
         if (freeVipDays > 0) {
-            user.setVipExpired((int) (now + 60L * 60 * 24 * freeVipDays));
-            user.setVipDownCount(50);
+            long addSeconds = 60L * 60 * 24 * freeVipDays;
+            Integer current = user.getVipExpired();
+            if (current == null || current <= now) {
+                // 未开通或已过期: 从当前时间起算
+                user.setVipExpired((int) (now + addSeconds));
+                user.setVipDownCount(50);
+            } else {
+                // 已是有效会员: 在原到期时间上叠加, 与充值逻辑一致
+                user.setVipExpired((int) (current + addSeconds));
+                if (user.getVipDownCount() == null || user.getVipDownCount() <= 0 || user.getVipDownCount() > 50) {
+                    user.setVipDownCount(50);
+                }
+            }
         }
     }
 
