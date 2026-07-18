@@ -84,7 +84,7 @@ const formRules: FormRules = {
 
 const loadBatch = async () => {
     try {
-        const data: any = await dictDataAll({ dictType: 'gift_batch' })
+        const data: any = await dictDataAll({ type_id: 0, dictType: 'gift_batch' })
         batchOptions.value = data || []
     } catch (e) {
         batchOptions.value = []
