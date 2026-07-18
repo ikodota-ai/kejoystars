@@ -31,6 +31,7 @@
                         <el-option label="全部" value />
                         <el-option label="微信支付" :value="2" />
                         <el-option label="支付宝支付" :value="3" />
+                        <el-option label="后台赠送" :value="4" />
                     </el-select>
                 </el-form-item>
                 <el-form-item label="支付状态">

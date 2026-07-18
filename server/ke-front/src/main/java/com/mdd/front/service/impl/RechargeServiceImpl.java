@@ -91,6 +91,8 @@ public class RechargeServiceImpl implements IRechargeService {
         QueryWrapper<RechargeOrder> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_id", userId);
         queryWrapper.eq("pay_status", PaymentEnum.OK_PAID.getCode());
+        // C端"充值记录"不展示后台赠送订单, 避免"充值30元"文案误导
+        queryWrapper.ne("pay_way", PaymentEnum.GIFT_PAY.getCode());
         queryWrapper.orderByDesc("id");
 
         IPage<RechargeOrder> iPage = rechargeOrderMapper.selectPage(new Page<>(pageNo, pageSize), queryWrapper);

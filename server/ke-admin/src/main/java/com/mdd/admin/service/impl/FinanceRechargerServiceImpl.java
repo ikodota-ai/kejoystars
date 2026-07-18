@@ -105,6 +105,11 @@ public class FinanceRechargerServiceImpl implements IFinanceRechargerService {
                 "datetime:start_time-end_time@t.create_time:str",
         });
 
+        // 未指定 pay_way 时默认排除后台赠送订单, 保持"充值记录"语义
+        if (searchValidate.getPay_way() == null) {
+            mpjQueryWrapper.ne("t.pay_way", PaymentEnum.GIFT_PAY.getCode());
+        }
+
         if (StringUtils.isNotEmpty(searchValidate.getUser_info())) {
             String keyword = searchValidate.getUser_info();
             mpjQueryWrapper.nested(wq->wq
@@ -143,6 +148,10 @@ public class FinanceRechargerServiceImpl implements IFinanceRechargerService {
         RechargeOrder rechargeOrder = rechargeOrderMapper.selectById(orderId);
 
         Assert.notNull(rechargeOrder, "充值订单不存在!");
+        if (rechargeOrder.getPayWay() != null
+                && rechargeOrder.getPayWay().equals(PaymentEnum.GIFT_PAY.getCode())) {
+            throw new OperateException("赠送订单不支持退款");
+        }
         if (!rechargeOrder.getPayStatus().equals(PaymentEnum.OK_PAID.getCode())) {
             throw new OperateException("当前订单不可退款!");
         }
@@ -442,6 +451,10 @@ public class FinanceRechargerServiceImpl implements IFinanceRechargerService {
                 "=:pay_status@t.pay_status:int",
                 "datetime:start_time-end_time@create_time:long",
         });
+
+        if (searchValidate.getPay_way() == null) {
+            mpjQueryWrapper.ne("t.pay_way", PaymentEnum.GIFT_PAY.getCode());
+        }
 
         if (StringUtils.isNotEmpty(searchValidate.getUser_info())) {
             String keyword = searchValidate.getUser_info();
