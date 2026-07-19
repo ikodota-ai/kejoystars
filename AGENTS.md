@@ -24,6 +24,16 @@ likeadmin_java is a multi-module Spring Boot 2.7 + Vue 3 admin platform with a N
 - Front-ends: 4-space indent, TypeScript preferred; components `PascalCase.vue`, composables `useXxx.ts`, Pinia stores `useXxxStore`.
 - Run `npm run lint` (ESLint + Prettier) before committing UI changes.
 
+## JSON Field Naming (Backend ↔ Frontend Contract)
+**This is a recurring source of bugs; read this before touching any admin API or view.**
+
+- `ke-admin` has **no** global Jackson naming strategy: responses are serialized in **camelCase** by default. `ke-front` (C-end) uses `SNAKE_CASE`.
+- **Admin Vue reads**: use camelCase keys to match the response (e.g. `formData.vipExpired`, `row.userMoney`). Existing list pages (`<el-table-column prop="...">`) already follow this convention — mirror them.
+- **Admin Vue writes** (request bodies, `field` values in generic edit endpoints): follow whatever the backend `switch(field)` / validator expects. That is usually `snake_case` (e.g. `real_name`, `user_id`, `batch_key`). Check the target controller before assuming.
+- **Backend Validate objects** (request DTOs) with `snake_case` JSON fields **must** annotate each field with `@JsonProperty("snake_case")`. Do not rely on a global strategy — there isn't one. Search existing `validate/**` files for examples.
+- **Backend VO objects** (response DTOs) should stay camelCase; only add `@JsonProperty("snake_case")` when a specific field must be delivered as snake_case for legacy compatibility.
+- Never enable a project-wide `SNAKE_CASE` in `ke-admin`: dozens of existing VOs/validates were authored under the camelCase-by-default assumption and would silently break.
+
 ## Testing Guidelines
 - Backend tests live in `server/<module>/src/test/java`; run `mvn test -pl ke-admin -Dmaven.test.skip=false` (parent skips tests by default).
 - No JS test runner is configured; rely on `npm run type-check` and manual checks against the demo (`admin` / `123456`).

@@ -13,12 +13,12 @@
                     <div class="basis-40 flex flex-col justify-center items-center">
                         <div class="text-tx-regular">账户余额</div>
                         <div class="mt-2 flex items-center">
-                            ¥{{ formData.user_money }}
+                            ¥{{ formData.userMoney }}
                             <el-button
                                 v-perms="['user.user/adjustMoney']"
                                 type="primary"
                                 link
-                                @click="handleAdjust(formData.user_money)"
+                                @click="handleAdjust(formData.userMoney)"
                             >
                                 调整
                             </el-button>
@@ -27,7 +27,7 @@
                     <div class="basis-40 flex flex-col justify-center items-center">
                         <div class="text-tx-regular">VIP剩余</div>
                         <div class="mt-2 flex items-center">
-                            {{ formData.vip_expired > 0 ? formData.vip_expired + ' 天' : '未开通' }}
+                            {{ formData.vipExpired > 0 ? formData.vipExpired + ' 天' : '未开通' }}
                             <el-button
                                 v-perms="['user.user/gift']"
                                 type="primary"
@@ -56,7 +56,7 @@
                     </popover-input>
                 </el-form-item>
                 <el-form-item label="真实姓名：">
-                    {{ formData.real_name || '-' }}
+                    {{ formData.realName || '-' }}
                     <popover-input
                         class="ml-[10px]"
                         @confirm="handleEdit($event, 'real_name')"
@@ -109,8 +109,8 @@
                     </popover-input>
                 </el-form-item>
                 <el-form-item label="注册来源："> {{ formData.channel }} </el-form-item>
-                <el-form-item label="注册时间："> {{ formData.create_time }} </el-form-item>
-                <el-form-item label="最近登录时间："> {{ formData.login_time }} </el-form-item>
+                <el-form-item label="注册时间："> {{ formData.createTime }} </el-form-item>
+                <el-form-item label="最近登录时间："> {{ formData.loginTime }} </el-form-item>
             </el-form>
         </el-card>
 
@@ -121,7 +121,7 @@
         />
         <vip-gift
             v-model:show="giftState.show"
-            :vip-remain="formData.vip_expired || 0"
+            :vip-remain="formData.vipExpired || 0"
             @confirm="handleConfirmGift"
         />
     </div>
@@ -141,16 +141,16 @@ const route = useRoute()
 const formData = reactive({
     avatar: '',
     channel: '',
-    create_time: '',
-    login_time: '',
+    createTime: '',
+    loginTime: '',
     mobile: '',
     nickname: '',
-    real_name: 0,
+    realName: '',
     sex: 0,
     sn: '',
     account: '',
-    user_money: '',
-    vip_expired: 0
+    userMoney: '',
+    vipExpired: 0
 })
 
 const adjustState = reactive({
