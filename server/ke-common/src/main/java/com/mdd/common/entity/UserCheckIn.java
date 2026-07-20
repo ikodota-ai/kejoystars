@@ -28,6 +28,10 @@ public class UserCheckIn implements Serializable {
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
 
+    @ApiModelProperty(value = "签到日期(用于并发唯一约束)")
+    @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd")
+    private Date checkDate;
+
     @ApiModelProperty(value = "奖励")
     private BigDecimal reward;
 
