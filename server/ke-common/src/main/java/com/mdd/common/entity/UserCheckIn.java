@@ -12,7 +12,7 @@ import java.util.Date;
 import java.math.BigDecimal;
 
 @Data
-@ApiModel("【请填写功能名称】实体")
+@ApiModel("签到记录")
 public class UserCheckIn implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -27,10 +27,6 @@ public class UserCheckIn implements Serializable {
     @ApiModelProperty(value = "签到时间")
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
-
-    @ApiModelProperty(value = "签到日期(用于并发唯一约束)")
-    @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd")
-    private Date checkDate;
 
     @ApiModelProperty(value = "奖励")
     private BigDecimal reward;

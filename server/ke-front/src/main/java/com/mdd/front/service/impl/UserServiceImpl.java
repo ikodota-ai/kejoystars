@@ -442,12 +442,10 @@ public class UserServiceImpl implements IUserService {
     @Transactional
     public void checkIn(Integer userId) {
         //先判断一次(常规路径给出友好提示); 真正防并发依赖 (userid,check_date) 唯一索引
-        java.util.Date now = new java.util.Date();
-        java.util.Date today = java.sql.Date.valueOf(new java.text.SimpleDateFormat("yyyy-MM-dd").format(now));
 
         int count = Math.toIntExact(userCheckInMapper.selectCount(new QueryWrapper<UserCheckIn>()
                 .eq("userid", userId)
-                .eq("check_date", today)
+                .apply("TO_DAYS(create_time) = TO_DAYS(NOW())")
         ));
         if (count > 0) {
             throw new OperateException("今天已经签到过了");
@@ -455,13 +453,12 @@ public class UserServiceImpl implements IUserService {
 
         UserCheckIn entity = new UserCheckIn();
         entity.setUserid(userId);
-        entity.setCreateTime(now);
-        entity.setCheckDate(today);
+        entity.setCreateTime(new Date());
         entity.setReward(new BigDecimal("10.0"));
         try {
             userCheckInMapper.insert(entity);
         } catch (org.springframework.dao.DuplicateKeyException e) {
-            //并发下第二个请求会命中 (userid, check_date) 唯一索引冲突
+            //并发下第二个请求会命中 (userid, create_time) 唯一索引冲突
             throw new OperateException("今天已经签到过了");
         }
         userMapper.updateUserMoneyAdd(userId, 10, 10);
